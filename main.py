@@ -12,8 +12,8 @@ STATE_FILE = "upbit_markets.json"
 CHECK_INTERVAL = 60  # seconds
 
 # ✅ Safe Render environment variable names
-UPBIT_BOT_TOKEN = os.getenv("UPBIT_BOT_TOKEN")  # Telegram bot token
-UPBIT_CHAT_ID = os.getenv("UPBIT_CHAT_ID")      # Telegram chat ID
+UPBIT_BOT_TOKEN = os.getenv("8205514298:AAEaL4Btdl0oT5Ohu3RZj7moY3DU3HuPS6w")  # Telegram bot token
+UPBIT_CHAT_ID = os.getenv("7523660884")      # Telegram chat ID
 # ==================
 
 # ===== TELEGRAM ALERT FUNCTION =====
