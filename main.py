@@ -91,4 +91,8 @@ def main():
         time.sleep(CHECK_INTERVAL)
 
 if __name__ == "__main__":
+    # ✅ Send a one-time startup test message
+    send_telegram_message("🚀 Test alert: Upbit scanner is live on Render!")
+
+    # Start the main Upbit scanner loop
     main()
