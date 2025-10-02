@@ -5,38 +5,56 @@ import requests
 import time
 import json
 from datetime import datetime
+from flask import Flask
+import threading
+import os
 
-# ====== CONFIG ======
+# ===== CONFIG =====
 UPBIT_API_URL = "https://api.upbit.com/v1/market/all"
 STATE_FILE = "upbit_markets.json"
-
-BOT_TOKEN = "8205514298:AAEaL4Btdl0oT5Ohu3RZj7moY3DU3HuPS6w"
-CHAT_ID = "Y7523660884"
+BOT_TOKEN = os.getenv("BOT_TOKEN")  # use Render environment variable
+CHAT_ID = os.getenv("CHAT_ID")      # use Render environment variable
 CHECK_INTERVAL = 60  # seconds
-# ====================
+# ==================
 
+# ===== FLASK KEEP-ALIVE =====
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Upbit scanner running!"
+
+def run_web():
+    port = int(os.environ.get("PORT", 10000))  # Render sets PORT env variable
+    app.run(host='0.0.0.0', port=port)
+
+threading.Thread(target=run_web).start()
+# ==============================
+
+# ===== TELEGRAM ALERT FUNCTION =====
 def send_telegram_message(message):
-    """Send message to Telegram chat"""
+    if not BOT_TOKEN or not CHAT_ID:
+        print("⚠️ Telegram token or chat ID not set")
+        return
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     payload = {"chat_id": CHAT_ID, "text": message, "parse_mode": "HTML"}
     try:
         requests.post(url, data=payload, timeout=10)
     except Exception as e:
         print(f"⚠️ Telegram send failed: {e}")
+# ===================================
 
+# ===== UPBIT SCANNER FUNCTIONS =====
 def fetch_markets():
-    """Fetch all current markets from Upbit API"""
     try:
-        response = requests.get(UPBIT_API_URL, params={"isDetails": "false"}, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-        return sorted([m["market"] for m in data])
+        resp = requests.get(UPBIT_API_URL, params={"isDetails": "false"}, timeout=10)
+        resp.raise_for_status()
+        return sorted([m["market"] for m in resp.json()])
     except Exception as e:
         print(f"⚠️ Error fetching markets: {e}")
         return []
 
 def load_previous_state():
-    """Load previously saved markets"""
     try:
         with open(STATE_FILE, "r") as f:
             return json.load(f)
@@ -44,12 +62,13 @@ def load_previous_state():
         return []
 
 def save_state(markets):
-    """Save current markets to file"""
     with open(STATE_FILE, "w") as f:
         json.dump(markets, f, indent=2)
+# ===================================
 
+# ===== MAIN LOOP =====
 def main():
-    print("🚀 Starting Upbit Listing Scanner with Telegram Alerts")
+    print("🚀 Starting Upbit Listing Scanner on Render")
     previous_markets = load_previous_state()
 
     while True:
@@ -64,7 +83,7 @@ def main():
             message = f"🔥 <b>New Upbit Listing Detected</b>\n🕒 {timestamp}\n"
             for m in sorted(new_listings):
                 message += f"👉 <code>{m}</code>\n"
-            message += "\n🚨 Check Upbit now — possible new token(s)!"
+            message += "\n🚨 Check Upbit now!"
             print(message)
             send_telegram_message(message)
             previous_markets = current_markets
@@ -74,3 +93,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
