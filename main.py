@@ -12,30 +12,9 @@ STATE_FILE = "upbit_markets.json"
 CHECK_INTERVAL = 60  # seconds
 
 # ✅ Safe Render environment variable names
-UPBIT_BOT_TOKEN = os.getenv("8205514298:AAEaL4Btdl0oT5Ohu3RZj7moY3DU3HuPS6w")  # Telegram bot token
-UPBIT_CHAT_ID = os.getenv("7523660884")      # Telegram chat ID
+UPBIT_BOT_TOKEN = os.getenv("UPBIT_BOT_TOKEN")  # Telegram bot token
+UPBIT_CHAT_ID = os.getenv("UPBIT_CHAT_ID")      # Telegram chat ID
 # ==================
-
-# ===== FLASK KEEP-ALIVE =====
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return "Upbit scanner running!"
-
-# ✅ Optional route to trigger test message instantly
-@app.route('/test-alert')
-def test_alert():
-    send_telegram_message("🚀 Test alert: Upbit scanner is live on Render!")
-    return "Test message sent!", 200
-
-def run_web():
-    port = int(os.environ.get("PORT", 10000))  # Render assigns PORT automatically
-    app.run(host='0.0.0.0', port=port)
-
-# Start Flask in a separate thread
-threading.Thread(target=run_web).start()
-# ==============================
 
 # ===== TELEGRAM ALERT FUNCTION =====
 def send_telegram_message(message):
@@ -45,7 +24,8 @@ def send_telegram_message(message):
     url = f"https://api.telegram.org/bot{UPBIT_BOT_TOKEN}/sendMessage"
     payload = {"chat_id": UPBIT_CHAT_ID, "text": message, "parse_mode": "HTML"}
     try:
-        requests.post(url, data=payload, timeout=10)
+        resp = requests.post(url, data=payload, timeout=10)
+        print(f"Telegram response: {resp.text}")
     except Exception as e:
         print(f"⚠️ Telegram send failed: {e}")
 # ===================================
@@ -72,10 +52,32 @@ def save_state(markets):
         json.dump(markets, f, indent=2)
 # ===================================
 
+# ===== FLASK KEEP-ALIVE =====
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Upbit scanner running!"
+
+# Route to trigger a test Telegram alert manually
+@app.route('/test-alert')
+def test_alert():
+    send_telegram_message("🚀 Test alert: Upbit scanner is live (manual trigger)!")
+    return "Test message sent!", 200
+
+def run_web():
+    port = int(os.environ.get("PORT", 10000))  # Render assigns PORT automatically
+    app.run(host='0.0.0.0', port=port)
+
+# Start Flask in a separate thread
+threading.Thread(target=run_web).start()
+# ==============================
+
 # ===== MAIN LOOP =====
 def main():
     print("🚀 Starting Upbit Listing Scanner on Render")
     previous_markets = load_previous_state()
+    first_run = True  # <-- guarantees startup message
 
     while True:
         current_markets = fetch_markets()
@@ -84,6 +86,12 @@ def main():
             continue
 
         new_listings = list(set(current_markets) - set(previous_markets))
+
+        # ✅ Guaranteed first-run test message
+        if first_run:
+            send_telegram_message("🚀 Test alert: Upbit scanner is live on Render!")
+            first_run = False
+
         if new_listings:
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             message = f"🔥 <b>New Upbit Listing Detected</b>\n🕒 {timestamp}\n"
@@ -92,16 +100,11 @@ def main():
             message += "\n🚨 Check Upbit now!"
             print(message)
             send_telegram_message(message)
-            previous_markets = current_markets
-            save_state(current_markets)
 
+        previous_markets = current_markets
+        save_state(current_markets)
         time.sleep(CHECK_INTERVAL)
 # ===================================
 
 if __name__ == "__main__":
-    # ✅ One-time startup test message
-    send_telegram_message("🚀 Test alert: Upbit scanner is live on Render!")
-
-    # Start the main Upbit scanner loop
     main()
-
