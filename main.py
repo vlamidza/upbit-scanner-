@@ -1,6 +1,3 @@
-
-
-
 import requests
 import time
 import json
@@ -12,9 +9,11 @@ import os
 # ===== CONFIG =====
 UPBIT_API_URL = "https://api.upbit.com/v1/market/all"
 STATE_FILE = "upbit_markets.json"
-BOT_TOKEN = os.getenv("BOT_TOKEN")  # use Render environment variable
-CHAT_ID = os.getenv("CHAT_ID")      # use Render environment variable
 CHECK_INTERVAL = 60  # seconds
+
+# ✅ Safe Render environment variable names
+UPBIT_BOT_TOKEN = os.getenv("UPBIT_BOT_TOKEN")  # your Telegram bot token
+UPBIT_CHAT_ID = os.getenv("UPBIT_CHAT_ID")      # your Telegram chat ID
 # ==================
 
 # ===== FLASK KEEP-ALIVE =====
@@ -25,7 +24,7 @@ def home():
     return "Upbit scanner running!"
 
 def run_web():
-    port = int(os.environ.get("PORT", 10000))  # Render sets PORT env variable
+    port = int(os.environ.get("PORT", 10000))  # Render sets PORT automatically
     app.run(host='0.0.0.0', port=port)
 
 threading.Thread(target=run_web).start()
@@ -33,11 +32,11 @@ threading.Thread(target=run_web).start()
 
 # ===== TELEGRAM ALERT FUNCTION =====
 def send_telegram_message(message):
-    if not BOT_TOKEN or not CHAT_ID:
+    if not UPBIT_BOT_TOKEN or not UPBIT_CHAT_ID:
         print("⚠️ Telegram token or chat ID not set")
         return
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    payload = {"chat_id": CHAT_ID, "text": message, "parse_mode": "HTML"}
+    url = f"https://api.telegram.org/bot{UPBIT_BOT_TOKEN}/sendMessage"
+    payload = {"chat_id": UPBIT_CHAT_ID, "text": message, "parse_mode": "HTML"}
     try:
         requests.post(url, data=payload, timeout=10)
     except Exception as e:
@@ -93,4 +92,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
