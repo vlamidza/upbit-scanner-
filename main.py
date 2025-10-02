@@ -12,8 +12,8 @@ STATE_FILE = "upbit_markets.json"
 CHECK_INTERVAL = 60  # seconds
 
 # ✅ Safe Render environment variable names
-UPBIT_BOT_TOKEN = os.getenv("UPBIT_BOT_TOKEN")  # your Telegram bot token
-UPBIT_CHAT_ID = os.getenv("UPBIT_CHAT_ID")      # your Telegram chat ID
+UPBIT_BOT_TOKEN = os.getenv("8205514298:AAEaL4Btdl0oT5Ohu3RZj7moY3DU3HuPS6w")  # Telegram bot token
+UPBIT_CHAT_ID = os.getenv("7523660884")      # Telegram chat ID
 # ==================
 
 # ===== FLASK KEEP-ALIVE =====
@@ -23,10 +23,17 @@ app = Flask(__name__)
 def home():
     return "Upbit scanner running!"
 
+# ✅ Optional route to trigger test message instantly
+@app.route('/test-alert')
+def test_alert():
+    send_telegram_message("🚀 Test alert: Upbit scanner is live on Render!")
+    return "Test message sent!", 200
+
 def run_web():
-    port = int(os.environ.get("PORT", 10000))  # Render sets PORT automatically
+    port = int(os.environ.get("PORT", 10000))  # Render assigns PORT automatically
     app.run(host='0.0.0.0', port=port)
 
+# Start Flask in a separate thread
 threading.Thread(target=run_web).start()
 # ==============================
 
@@ -89,10 +96,12 @@ def main():
             save_state(current_markets)
 
         time.sleep(CHECK_INTERVAL)
+# ===================================
 
 if __name__ == "__main__":
-    # ✅ Send a one-time startup test message
+    # ✅ One-time startup test message
     send_telegram_message("🚀 Test alert: Upbit scanner is live on Render!")
 
     # Start the main Upbit scanner loop
     main()
+
