@@ -1,12 +1,19 @@
 import requests
 import os
 
-BOT_TOKEN = os.getenv("8205514298:AAEaL4Btdl0oT5Ohu3RZj7moY3DU3HuPS6w")
-CHAT_ID = os.getenv("7523660884")
+BOT_TOKEN = os.getenv("UPBIT_BOT_TOKEN")
+CHAT_ID = os.getenv("UPBIT_CHAT_ID")
 
 def send_telegram_message(message):
+    if not BOT_TOKEN or not CHAT_ID:
+        print("⚠️ Telegram token or chat ID not set")
+        return
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     payload = {"chat_id": CHAT_ID, "text": message, "parse_mode": "HTML"}
-    requests.post(url, data=payload)
+    try:
+        requests.post(url, data=payload, timeout=10)
+    except Exception as e:
+        print(f"⚠️ Telegram send failed: {e}")
 
-send_telegram_message("✅ Test alert: Upbit scanner is live!")
+if __name__ == "__main__":
+    send_telegram_message("✅ Test alert: Upbit scanner is live!")

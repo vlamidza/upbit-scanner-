@@ -11,9 +11,9 @@ UPBIT_API_URL = "https://api.upbit.com/v1/market/all"
 STATE_FILE = "upbit_markets.json"
 CHECK_INTERVAL = 60  # seconds
 
-# ✅ Safe Render environment variable names
-UPBIT_BOT_TOKEN = os.getenv("8205514298:AAEaL4Btdl0oT5Ohu3RZj7moY3DU3HuPS6w")  # Telegram bot token
-UPBIT_CHAT_ID = os.getenv("7523660884")      # Telegram chat ID
+# ✅ Environment variables
+UPBIT_BOT_TOKEN = os.getenv("UPBIT_BOT_TOKEN")  # Telegram bot token
+UPBIT_CHAT_ID = os.getenv("UPBIT_CHAT_ID")      # Telegram chat ID
 # ==================
 
 # ===== TELEGRAM ALERT FUNCTION =====
@@ -46,6 +46,10 @@ def load_previous_state():
             return json.load(f)
     except FileNotFoundError:
         return []
+    except json.JSONDecodeError:
+        # Corrupted or partially written state file; reset cleanly
+        print("⚠️ State file is corrupted; starting with empty state")
+        return []
 
 def save_state(markets):
     with open(STATE_FILE, "w") as f:
@@ -69,13 +73,15 @@ def run_web():
     port = int(os.environ.get("PORT", 10000))  # Render assigns PORT automatically
     app.run(host='0.0.0.0', port=port)
 
-# Start Flask in a separate thread
-threading.Thread(target=run_web).start()
 # ==============================
 
 # ===== MAIN LOOP =====
 def main():
     print("🚀 Starting Upbit Listing Scanner on Render")
+    # Start Flask in a background daemon thread to avoid blocking and prevent
+    # unintended server startup on import.
+    web_thread = threading.Thread(target=run_web, daemon=True)
+    web_thread.start()
     previous_markets = load_previous_state()
     first_run = True  # <-- guarantees startup message
 
