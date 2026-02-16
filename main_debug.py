@@ -7,17 +7,10 @@ import threading
 UPBIT_BOT_TOKEN = os.getenv("UPBIT_BOT_TOKEN")
 UPBIT_CHAT_ID = os.getenv("UPBIT_CHAT_ID")
 
-# ===== DEBUG PRINT =====
+# ===== DEBUG PRINT (without leaking secrets) =====
 print("🔹 Debug: Checking environment variables")
-if UPBIT_BOT_TOKEN:
-    print(f"UPBIT_BOT_TOKEN is set ✅ (first 5 chars: {UPBIT_BOT_TOKEN[:5]}...)")
-else:
-    print("UPBIT_BOT_TOKEN is NOT set ❌")
-
-if UPBIT_CHAT_ID:
-    print(f"UPBIT_CHAT_ID is set ✅ ({UPBIT_CHAT_ID})")
-else:
-    print("UPBIT_CHAT_ID is NOT set ❌")
+print("UPBIT_BOT_TOKEN set ✅" if UPBIT_BOT_TOKEN else "UPBIT_BOT_TOKEN is NOT set ❌")
+print("UPBIT_CHAT_ID set ✅" if UPBIT_CHAT_ID else "UPBIT_CHAT_ID is NOT set ❌")
 
 # ===== TELEGRAM TEST FUNCTION =====
 def send_telegram_message(message):
@@ -49,7 +42,10 @@ def run_web():
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
 
-threading.Thread(target=run_web).start()
+if __name__ == "__main__":
+    # Start Flask in a background daemon thread to avoid blocking and prevent
+    # unintended server startup on import.
+    threading.Thread(target=run_web, daemon=True).start()
 
-# ===== Send one test message on startup =====
-send_telegram_message("🚀 Debug: Test message on startup!")
+    # ===== Send one test message on startup =====
+    send_telegram_message("🚀 Debug: Test message on startup!")

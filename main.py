@@ -6,17 +6,13 @@ from flask import Flask
 import threading
 import os
 
-# ===== CONFIG =====
 UPBIT_API_URL = "https://api.upbit.com/v1/market/all"
 STATE_FILE = "upbit_markets.json"
-CHECK_INTERVAL = 60  # seconds
+CHECK_INTERVAL = 60
 
-# ✅ Safe Render environment variable names
-UPBIT_BOT_TOKEN = os.getenv("8205514298:AAEaL4Btdl0oT5Ohu3RZj7moY3DU3HuPS6w")  # Telegram bot token
-UPBIT_CHAT_ID = os.getenv("7523660884")      # Telegram chat ID
-# ==================
+UPBIT_BOT_TOKEN = os.getenv("UPBIT_BOT_TOKEN")
+UPBIT_CHAT_ID = os.getenv("UPBIT_CHAT_ID")
 
-# ===== TELEGRAM ALERT FUNCTION =====
 def send_telegram_message(message):
     if not UPBIT_BOT_TOKEN or not UPBIT_CHAT_ID:
         print("⚠️ Telegram token or chat ID not set")
@@ -28,9 +24,7 @@ def send_telegram_message(message):
         print(f"Telegram response: {resp.text}")
     except Exception as e:
         print(f"⚠️ Telegram send failed: {e}")
-# ===================================
 
-# ===== UPBIT SCANNER FUNCTIONS =====
 def fetch_markets():
     try:
         resp = requests.get(UPBIT_API_URL, params={"isDetails": "false"}, timeout=10)
@@ -46,20 +40,21 @@ def load_previous_state():
             return json.load(f)
     except FileNotFoundError:
         return []
+    except json.JSONDecodeError:
+        # Corrupted or partially written state file; reset cleanly
+        print("⚠️ State file is corrupted; starting with empty state")
+        return []
 
 def save_state(markets):
     with open(STATE_FILE, "w") as f:
         json.dump(markets, f, indent=2)
-# ===================================
 
-# ===== FLASK KEEP-ALIVE =====
 app = Flask(__name__)
 
 @app.route('/')
 def home():
     return "Upbit scanner running!"
 
-# Route to trigger a test Telegram alert manually
 @app.route('/test-alert')
 def test_alert():
     send_telegram_message("🚀 Test alert: Upbit scanner is live (manual trigger)!")
@@ -69,15 +64,11 @@ def run_web():
     port = int(os.environ.get("PORT", 10000))  # Render assigns PORT automatically
     app.run(host='0.0.0.0', port=port)
 
-# Start Flask in a separate thread
-threading.Thread(target=run_web).start()
-# ==============================
-
-# ===== MAIN LOOP =====
 def main():
     print("🚀 Starting Upbit Listing Scanner on Render")
+    threading.Thread(target=run_web, daemon=True).start()
     previous_markets = load_previous_state()
-    first_run = True  # <-- guarantees startup message
+    first_run = True
 
     while True:
         current_markets = fetch_markets()
@@ -87,7 +78,6 @@ def main():
 
         new_listings = list(set(current_markets) - set(previous_markets))
 
-        # ✅ Guaranteed first-run test message
         if first_run:
             send_telegram_message("🚀 Test alert: Upbit scanner is live on Render!")
             first_run = False
@@ -104,7 +94,6 @@ def main():
         previous_markets = current_markets
         save_state(current_markets)
         time.sleep(CHECK_INTERVAL)
-# ===================================
 
 if __name__ == "__main__":
     main()
