@@ -12,8 +12,8 @@ STATE_FILE = "upbit_markets.json"
 CHECK_INTERVAL = 60  # seconds
 
 # ✅ Safe Render environment variable names
-UPBIT_BOT_TOKEN = os.getenv("8205514298:AAEaL4Btdl0oT5Ohu3RZj7moY3DU3HuPS6w")  # Telegram bot token
-UPBIT_CHAT_ID = os.getenv("7523660884")      # Telegram chat ID
+UPBIT_BOT_TOKEN = os.getenv("    ")  # Telegram bot token
+UPBIT_CHAT_ID = os.getenv("    ")      # Telegram chat ID
 # ==================
 
 # ===== TELEGRAM ALERT FUNCTION =====
@@ -28,7 +28,6 @@ def send_telegram_message(message):
         print(f"Telegram response: {resp.text}")
     except Exception as e:
         print(f"⚠️ Telegram send failed: {e}")
-# ===================================
 
 # ===== UPBIT SCANNER FUNCTIONS =====
 def fetch_markets():
@@ -52,7 +51,6 @@ def save_state(markets):
         json.dump(markets, f, indent=2)
 # ===================================
 
-# ===== FLASK KEEP-ALIVE =====
 app = Flask(__name__)
 
 @app.route('/')
@@ -66,14 +64,12 @@ def test_alert():
     return "Test message sent!", 200
 
 def run_web():
-    port = int(os.environ.get("PORT", 10000))  # Render assigns PORT automatically
+    port = int(os.environ.get("PORT", 10000))  # Render PORT auto
     app.run(host='0.0.0.0', port=port)
 
 # Start Flask in a separate thread
 threading.Thread(target=run_web).start()
-# ==============================
 
-# ===== MAIN LOOP =====
 def main():
     print("🚀 Starting Upbit Listing Scanner on Render")
     previous_markets = load_previous_state()
@@ -87,7 +83,7 @@ def main():
 
         new_listings = list(set(current_markets) - set(previous_markets))
 
-        # ✅ Guaranteed first-run test message
+    
         if first_run:
             send_telegram_message("🚀 Test alert: Upbit scanner is live on Render!")
             first_run = False
